@@ -1,3 +1,5 @@
+.vscode
+
 contracts/.env
 contracts/out
 contracts/cache
