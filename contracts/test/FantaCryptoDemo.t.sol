@@ -3,20 +3,21 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "../src/FantaCrypto.sol";
+import "../src/FantaCryptoDemo.sol";
 
-contract FantaCryptoTest is Test {
-    FantaCrypto public fantaCrypto;
+contract FantaCryptoDemoTest is Test {
+    FantaCryptoDemo public fantaCrypto;
     address player1 = address(0);
     address player2 = address(1);
     address player3 = address(2);
+    address marketOwner = address(666);
     uint256 forkId;
 
     function setUp() public {
         forkId = vm.createFork(vm.envString("MAINNET_ZKEVM_RPC_URL"));
         vm.selectFork(forkId);
         vm.makePersistent(address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f));
-        fantaCrypto = new FantaCrypto();
+        fantaCrypto = new FantaCryptoDemo();
     }
 
     function testReadDataFeed() public {
@@ -36,11 +37,12 @@ contract FantaCryptoTest is Test {
         vm.fee(networkFee);
         string memory name = "CheScoppiatiTournament";
         uint256 tokenAmountPerPlayer = 100;
-        uint256 roundDeadline = block.timestamp + 100;
-        uint256 marketDeadline = block.timestamp + 200;
+        uint256 roundDeadline = block.number + 300;
+        uint256 marketDeadline = block.number + 600;
         uint256 playerFee = 10**18/100;
         string[] memory blacklistedTokens = new string[](0);
         address[] memory whitelistedPlayers = new address[](0);
+        vm.startPrank(marketOwner);
         uint256 marketId = fantaCrypto.createMarket(
             name,
             tokenAmountPerPlayer,
@@ -50,6 +52,7 @@ contract FantaCryptoTest is Test {
             blacklistedTokens,
             whitelistedPlayers
         );
+        vm.stopPrank();
         console2.log("Market ID: ", marketId);
         vm.startPrank(player1);
         uint224 amountUSD = 100;
@@ -58,8 +61,8 @@ contract FantaCryptoTest is Test {
         (int224 bitcoinPrice,) = fantaCrypto.readDataFeed(btcPair);
         // convert price to string
         console2.log("BTC/USD price: ", bitcoinPrice);
-        FantaCrypto.Position memory btcPosition = FantaCrypto.Position(btcPair, amountUSD/uint224(bitcoinPrice));
-        FantaCrypto.Position[] memory positions = new FantaCrypto.Position[](1);
+        FantaCryptoDemo.Position memory btcPosition = FantaCryptoDemo.Position(btcPair, amountUSD/uint224(bitcoinPrice));
+        FantaCryptoDemo.Position[] memory positions = new FantaCryptoDemo.Position[](1);
         positions[0] = btcPosition;
         uint256 funds = 10**19;
         vm.deal(player1, funds);
@@ -69,11 +72,11 @@ contract FantaCryptoTest is Test {
         // check that the player has been added to the market and he has submitted his position
         address[] memory players = fantaCrypto.getMarketPlayers(marketId);
         assertEq(players.length, 1);
-        FantaCrypto.Position[] memory playerPositions = fantaCrypto.getPlayerPositions(marketId, players[0]);
+        FantaCryptoDemo.Position[] memory playerPositions = fantaCrypto.getPlayerPositions(marketId, players[0]);
         assertEq(playerPositions[0].token, btcPosition.token);
         assertEq(playerPositions[0].amount, btcPosition.amount);
         // get frozen token
-        FantaCrypto.FrozenToken memory frozenToken = fantaCrypto.getMarketFrozenToken(marketId, btcPair);
+        FantaCryptoDemo.FrozenToken memory frozenToken = fantaCrypto.getMarketFrozenToken(marketId, btcPair);
         assertTrue(frozenToken.valueStart > 20000 * 10**18);
         assertTrue(frozenToken.valueEnd == 0);
         assertTrue(frozenToken.timestampStart > block.timestamp - 7 days);
@@ -82,7 +85,7 @@ contract FantaCryptoTest is Test {
         vm.deal(player2, funds);
         (int224 ethPrice,) = fantaCrypto.readDataFeed(ethPair);
         console2.log("ETH/USD price: ", ethPrice);
-        FantaCrypto.Position memory ethPosition = FantaCrypto.Position(ethPair, amountUSD/uint224(ethPrice));
+        FantaCryptoDemo.Position memory ethPosition = FantaCryptoDemo.Position(ethPair, amountUSD/uint224(ethPrice));
         positions[0] = ethPosition;
         fantaCrypto.submitPositions{value: playerFee}(marketId, positions);
         assertEq(address(player2).balance, funds - playerFee);
@@ -98,10 +101,19 @@ contract FantaCryptoTest is Test {
         assertTrue(frozenToken.valueStart > 1800 * 10**18);
         assertTrue(frozenToken.valueEnd == 0);
         assertTrue(frozenToken.timestampStart > block.timestamp - 7 days);
-        vm.rollFork(133232); // price BTC: $30,332.0162
-        (bitcoinPrice,) = fantaCrypto.readDataFeed(btcPair);
-        console2.log("BTC/USD price: ", bitcoinPrice);
-        (ethPrice,) = fantaCrypto.readDataFeed(ethPair);
-        console2.log("ETH/USD price: ", ethPrice);
+        vm.rollFork(marketDeadline + 1);
+        vm.stopPrank();
+        vm.startPrank(marketOwner);
+        uint224[] memory tokenValues = new uint224[](5);
+        tokenValues[0] = 100000 * 10**18;
+        tokenValues[1] = 2200 * 10**18;
+        tokenValues[2] = 2 * 10**18;
+        tokenValues[3] = 2 * 10**18;
+        tokenValues[4] = 7 * 10**18;
+        uint256 timestamp = block.timestamp;
+        uint256 winnerBalancePre = address(player1).balance;
+        fantaCrypto.closeMarket(marketId, tokenValues, timestamp);
+        uint256 winnerBalancePost = address(player1).balance;
+        assertEq(winnerBalancePost, winnerBalancePre + fantaCrypto.marketPools(marketId));
     }
 }

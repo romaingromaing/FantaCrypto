@@ -2,7 +2,7 @@
 
 To test forking the Polygon zkEVM mainnet, run:
 ```bash
-forge test --fork-url $MAINNET_ZKEVM_RPC_URL
+forge test --via-ir
 ```
 
 To deploy contracts on the Polygon zkEVM testnet, run:

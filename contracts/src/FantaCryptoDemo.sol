@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "@api3/contracts/v0.8/interfaces/IProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract FantaCrypto is Ownable {
+contract FantaCryptoDemo is Ownable {
     struct FrozenToken {
         uint224 valueStart;
         uint224 valueEnd;
@@ -200,7 +200,14 @@ contract FantaCrypto is Ownable {
     }
 
     // TODO: top 3 winners
-    function closeMarket(uint256 _marketId) external payable {
+    function closeMarket(
+        uint256 _marketId, 
+        uint224[] memory _tokenValues,
+        uint256 _timestamp
+    )
+        external
+        payable
+    {
         require(
             block.number > markets[_marketId].marketDeadline,
             "Market deadline has not passed"
@@ -214,26 +221,30 @@ contract FantaCrypto is Ownable {
             "Market is already closed"
         );
         markets[_marketId].open = false;
-        address winner = getWinner(_marketId);
+        address winner = getWinner(_marketId, _tokenValues, _timestamp);
         uint256 amountWon = marketPools[_marketId];
         require(payable(winner).send(amountWon), "Transfer failed");
         emit MarketClosed(_marketId, winner, amountWon);
     }
 
-    function getWinner(uint256 _marketId) internal returns (address) {
+    function getWinner(
+        uint256 _marketId,
+        uint224[] memory _tokenvalues,
+        uint256 _timestamp
+    )
+        internal 
+        returns (address)
+    {
         // before, we want to get all the current price of the market tokens
         for (uint256 i = 0; i < oracleProxyNames.length; i++) {
             if (!marketBlacklistedTokens[_marketId][oracleProxyNames[i]]) {
-                (int224 value, uint256 timestamp) = this.readDataFeed(
-                    oracleProxyNames[i]
-                );
                 marketFrozenTokens[_marketId][
                     oracleProxyNames[i]
                 ] = FrozenToken(
                     marketFrozenTokens[_marketId][oracleProxyNames[i]].valueStart,
-                    uint224(value),
+                    _tokenvalues[i],
                     marketFrozenTokens[_marketId][oracleProxyNames[i]].timestampStart,
-                    timestamp
+                    _timestamp
                 );
             }
         }
