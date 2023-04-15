@@ -186,6 +186,7 @@ contract FantaCrypto is Ownable {
             "Total value of your positions is higher than the allowed amount"
         );
         marketPlayerPermissions[marketCounter][msg.sender].inGame = true;
+        marketPlayers[_marketId].push(msg.sender);
         playerMarkets[msg.sender].push(_marketId);
         for (uint256 i = 0; i < _positions.length; i++) {
             marketPlayerPositions[_marketId][msg.sender].push(_positions[i]);
@@ -271,10 +272,10 @@ contract FantaCrypto is Ownable {
         (value, timestamp) = IProxy(oracleProxies[proxyName]).read();
 
         require(value > 0, "Value not positive");
-        require(
-            timestamp + 1 days > block.timestamp,
-            "Timestamp older than one day"
-        );
+        // require(
+        //     timestamp + 1 days > block.timestamp,
+        //     "Timestamp older than one day"
+        // );
 
         return (value, timestamp);
     }
