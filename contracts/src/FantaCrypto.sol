@@ -278,4 +278,89 @@ contract FantaCrypto is Ownable {
 
         return (value, timestamp);
     }
+
+    /*
+     *   GETTERS FUNCTIONS
+     */
+
+    // function to get a Market
+    function getMarket(uint256 _marketId)
+        external
+        view
+        returns(Market memory)
+    {
+        return(markets[_marketId]);
+    }
+
+    // function to get player positions
+    function getPlayerPositions(uint256 _marketId, address _player)
+        external
+        view
+        returns(Position[] memory)
+    {
+        return(marketPlayerPositions[_marketId][_player]);
+    }
+
+    // get players of a market
+    function getMarketPlayers(uint256 _marketId)
+        external
+        view
+        returns(address[] memory)
+    {
+        return(marketPlayers[_marketId]);
+    }
+
+    // get markets of a player
+    function getPlayerMarkets(address _player)
+        external
+        view
+        returns(uint256[] memory)
+    {
+        return(playerMarkets[_player]);
+    }
+
+    // get market pool
+    function getMarketPool(uint256 _marketId)
+        external
+        view
+        returns(uint256)
+    {
+        return(marketPools[_marketId]);
+    }
+
+    // get blacklisted tokens of a market
+    function getMarketBlacklistedTokens(uint256 _marketId)
+        external
+        view
+        returns(string[] memory)
+    {
+        string[] memory tmp = new string[](0);
+
+        for(uint i = 0; i < oracleProxyNames.length; i++) {
+            if(marketBlacklistedTokens[_marketId][oracleProxyNames[i]]) {
+                tmp[i] = oracleProxyNames[i];
+            }
+        }
+
+        return(tmp);
+    }
+
+    // get frozen tokens value of a market
+    function getMarketFrozenToken(uint256 _marketId, string memory _token)
+        external
+        view
+        returns(FrozenToken memory)
+    {
+        return(marketFrozenTokens[_marketId][_token]);
+    }
+
+    // get market permissions of a player
+    function getMarketPlayerPermissions(uint256 _marketId, address _player)
+        external
+        view
+        returns(Permissions memory)
+    {
+        return(marketPlayerPermissions[_marketId][_player]);
+    }
+
 }

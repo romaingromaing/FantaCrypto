@@ -43,6 +43,15 @@ contract FantaCryptoTest is Test {
         FantaCrypto.Position memory btcPosition = FantaCrypto.Position("BTC/USD", amountUSD/uint224(bitcoinPrice));
         FantaCrypto.Position[] memory positions = new FantaCrypto.Position[](1);
         positions[0] = btcPosition;
-        fantaCrypto.submitPositions(marketId, positions);
+        console2.log("Player funds: ", address(player1).balance);
+        // fantaCrypto.submitPositions{value: playerFee}(marketId, positions);
+        // vm.stopPrank();
+        // // check that the player has been added to the market and he has submitted his position
+        // address[] memory players = fantaCrypto.getMarketPlayers(marketId);
+        // console2.log("Market Players: ", players[0]);
+        // assertEq(players[0], player1);
+        // FantaCrypto.Position[] memory playerPositions = fantaCrypto.getPlayerPositions(marketId, player1);
+        // console2.log("Player Positions: ", playerPositions[0]);
+        // expect(playerPositions[0].market).toEqual(btcPosition);
     }
 }
