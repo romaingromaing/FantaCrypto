@@ -17,6 +17,7 @@ contract FantaCrypto is Ownable {
         uint256 roundDeadline;
         uint256 marketDeadline;
         uint256 playerFee;
+        bool publicMarket;
     }
 
     struct Position {
@@ -84,7 +85,8 @@ contract FantaCrypto is Ownable {
             _tokenAmountPerPlayer,
             _roundDeadline,
             _marketDeadline,
-            _playerFee
+            _playerFee,
+            _whitelistedPlayers.length == 0
         );
         // get the price feed for all the tokens and save them in the frozenTokens, but not if they are blacklisted
         for (uint256 i = 0; i < oracleProxyNames.length; i++) {
@@ -118,7 +120,8 @@ contract FantaCrypto is Ownable {
             "Round deadline has passed"
         );
         require(
-            marketPlayerPermissions[_marketId][msg.sender].allowed,
+            markets[_marketId].publicMarket ||
+                marketPlayerPermissions[_marketId][msg.sender].allowed,
             "You are not whitelisted for this market"
         );
         require(
