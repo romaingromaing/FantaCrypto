@@ -7,13 +7,42 @@ import "../src/FantaCrypto.sol";
 
 contract FantaCryptoTest is Test {
     FantaCrypto public fantaCrypto;
+    address public player1 = 0x627306090abaB3A6e1400e9345bC60c78a8BEf57;
 
     function setUp() public {
         fantaCrypto = new FantaCrypto();
     }
 
     function testReadDataFeed() public view {
-        (int224 value, uint256 timestamp) = fantaCrypto.readDataFeed("API3/USD");
-        console2.log("API3/USD value: ", value);
+        string memory market = "BTC/USD";
+        (int224 value,) = fantaCrypto.readDataFeed(market);
+        console2.log(market, value/10**18);
+    }
+
+    function testGiroDelFumo() public {
+        string memory name = "CheScoppiatiTournament";
+        uint256 tokenAmountPerPlayer = 100;
+        uint256 roundDeadline = block.timestamp + 100;
+        uint256 marketDeadline = block.timestamp + 200;
+        uint256 playerFee = 10**18/100;
+        string[] memory blacklistedTokens = new string[](0);
+        address[] memory whitelistedPlayers = new address[](0);
+        uint256 marketId = fantaCrypto.createMarket(
+            name,
+            tokenAmountPerPlayer,
+            roundDeadline,
+            marketDeadline,
+            playerFee,
+            blacklistedTokens,
+            whitelistedPlayers
+        );
+        console2.log("Market ID: ", marketId);
+        vm.startPrank(player1);
+        uint224 amountUSD = 100;
+        (int224 bitcoinPrice,) = fantaCrypto.readDataFeed("BTC/USD");
+        FantaCrypto.Position memory btcPosition = FantaCrypto.Position("BTC/USD", amountUSD/uint224(bitcoinPrice));
+        FantaCrypto.Position[] memory positions = new FantaCrypto.Position[](1);
+        positions[0] = btcPosition;
+        fantaCrypto.submitPositions(marketId, positions);
     }
 }

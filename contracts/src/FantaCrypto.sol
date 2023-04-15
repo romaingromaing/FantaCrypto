@@ -6,8 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FantaCrypto is Ownable {
     struct FrozenToken {
-        uint224 value;
-        uint256 timestamp;
+        uint224 valueStart;
+        uint224 valueEnd;
+        uint256 timestampStart;
+        uint256 timestampEnd;
     }
 
     struct Market {
@@ -18,6 +20,7 @@ contract FantaCrypto is Ownable {
         uint256 marketDeadline;
         uint256 playerFee;
         bool publicMarket;
+        bool open;
     }
 
     struct Position {
@@ -30,6 +33,34 @@ contract FantaCrypto is Ownable {
         bool inGame;
     }
 
+    event MarketCreated(
+        uint256 marketId,
+        string name,
+        address admin,
+        uint256 tokenAmountPerPlayer,
+        uint256 roundDeadline,
+        uint256 marketDeadline,
+        uint256 playerFee,
+        bool publicMarket
+    );
+    
+    event PositionsSubmitted(
+        uint256 marketId,
+        address player,
+        Position[] positions
+    );
+
+    event MarketClosed(
+        uint256 marketId,
+        address winner,
+        uint256 amountWon
+    );
+
+    event ProxySet(
+        string name,
+        address proxy
+    );
+
     mapping(uint256 => Market) public markets;
     mapping(uint256 => address[]) public marketPlayers;
     mapping(uint256 => mapping(address => Permissions)) public marketPlayerPermissions;
@@ -37,8 +68,7 @@ contract FantaCrypto is Ownable {
     mapping(address => uint256[]) public playerMarkets;
     mapping(uint256 => uint256) public marketPools;
     mapping(uint256 => mapping(string => bool)) marketBlacklistedTokens;
-    mapping(uint256 => mapping(string => FrozenToken)) public marketFrozenTokensStart;
-    mapping(uint256 => mapping(string => FrozenToken)) public marketFrozenTokensEnd;
+    mapping(uint256 => mapping(string => FrozenToken)) public marketFrozenTokens;
 
     uint256 public marketCounter;
 
@@ -67,7 +97,7 @@ contract FantaCrypto is Ownable {
         uint256 _playerFee,
         string[] memory _blacklistedTokens,
         address[] memory _whitelistedPlayers
-    ) external {
+    ) external returns (uint256) {
         marketCounter++;
         // empty mapping of blacklisted tokens
         for (uint256 i = 0; i < oracleProxyNames.length; i++) {
@@ -86,7 +116,8 @@ contract FantaCrypto is Ownable {
             _roundDeadline,
             _marketDeadline,
             _playerFee,
-            _whitelistedPlayers.length == 0
+            _whitelistedPlayers.length == 0,
+            true
         );
         // get the price feed for all the tokens and save them in the frozenTokens, but not if they are blacklisted
         for (uint256 i = 0; i < oracleProxyNames.length; i++) {
@@ -94,9 +125,9 @@ contract FantaCrypto is Ownable {
                 (int224 value, uint256 timestamp) = this.readDataFeed(
                     oracleProxyNames[i]
                 );
-                marketFrozenTokensStart[marketCounter][
+                marketFrozenTokens[marketCounter][
                     oracleProxyNames[i]
-                ] = FrozenToken(uint224(value), timestamp);
+                ] = FrozenToken(uint224(value), 0, timestamp, 0);
             }
         }
         for (uint256 i = 0; i < _whitelistedPlayers.length; i++) {
@@ -105,6 +136,17 @@ contract FantaCrypto is Ownable {
             ] = Permissions(true, false);
         }
         markets[marketCounter] = market;
+        emit MarketCreated(
+            marketCounter,
+            _name,
+            msg.sender,
+            _tokenAmountPerPlayer,
+            _roundDeadline,
+            _marketDeadline,
+            _playerFee,
+            _whitelistedPlayers.length == 0
+        );
+        return marketCounter;
     }
 
     function submitPositions(
@@ -137,7 +179,7 @@ contract FantaCrypto is Ownable {
             );
             totalValue +=
                 _positions[i].amount *
-                marketFrozenTokensStart[_marketId][_positions[i].token].value;
+                marketFrozenTokens[_marketId][_positions[i].token].valueStart;
         }
         require(
             totalValue <= markets[_marketId].tokenAmountPerPlayer,
@@ -149,10 +191,15 @@ contract FantaCrypto is Ownable {
             marketPlayerPositions[_marketId][msg.sender].push(_positions[i]);
         }
         marketPools[_marketId] += msg.value;
+        emit PositionsSubmitted(
+            _marketId,
+            msg.sender,
+            _positions
+        );
     }
 
     // TODO: top 3 winners
-    function payWinner(uint256 _marketId) external payable {
+    function closeMarket(uint256 _marketId) external payable {
         require(
             block.timestamp > markets[_marketId].marketDeadline,
             "Market deadline has not passed"
@@ -161,8 +208,15 @@ contract FantaCrypto is Ownable {
             markets[_marketId].admin == msg.sender,
             "You are not the admin of this market"
         );
+        require(
+            markets[_marketId].open,
+            "Market is already closed"
+        );
+        markets[_marketId].open = false;
         address winner = getWinner(_marketId);
-        payable(winner).transfer(marketPools[_marketId]);
+        uint256 amountWon = marketPools[_marketId];
+        require(payable(winner).send(amountWon), "Transfer failed");
+        emit MarketClosed(_marketId, winner, amountWon);
     }
 
     function getWinner(uint256 _marketId) internal returns (address) {
@@ -172,9 +226,14 @@ contract FantaCrypto is Ownable {
                 (int224 value, uint256 timestamp) = this.readDataFeed(
                     oracleProxyNames[i]
                 );
-                marketFrozenTokensEnd[_marketId][
+                marketFrozenTokens[_marketId][
                     oracleProxyNames[i]
-                ] = FrozenToken(uint224(value), timestamp);
+                ] = FrozenToken(
+                    marketFrozenTokens[_marketId][oracleProxyNames[i]].valueStart,
+                    uint224(value),
+                    marketFrozenTokens[_marketId][oracleProxyNames[i]].timestampStart,
+                    timestamp
+                );
             }
         }
         address[] memory players = marketPlayers[_marketId];
@@ -190,8 +249,7 @@ contract FantaCrypto is Ownable {
             for (uint256 j = 0; j < positions[i].length; j++) {
                 totalValues[i] +=
                     positions[i][j].amount *
-                    marketFrozenTokensEnd[_marketId][positions[i][j].token]
-                        .value;
+                    marketFrozenTokens[_marketId][positions[i][j].token].valueEnd;
             }
             if (totalValues[i] > highestTotalValue) {
                 highestTotalValue = totalValues[i];
@@ -204,6 +262,7 @@ contract FantaCrypto is Ownable {
     function setProxy(string memory name, address _proxy) public onlyOwner {
         oracleProxyNames.push(name);
         oracleProxies[name] = _proxy;
+        emit ProxySet(name, _proxy);
     }
 
     function readDataFeed(
