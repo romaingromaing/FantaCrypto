@@ -16,9 +16,10 @@ contract FantaCryptoTest is Test {
     }
 
     function testGiroDelFumo() public {
-        // uint256 forkId = vm.createFork(vm.envString("MAINNET_ZKEVM_RPC_URL"));
-        // vm.selectFork(forkId);
-        // vm.rollFork(125787);
+        uint256 forkId = vm.createFork(vm.envString("MAINNET_ZKEVM_RPC_URL"));
+        vm.makePersistent(address(0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f));
+        vm.selectFork(forkId);
+        vm.rollFork(121279); // price BTC: $30,694.60
         uint256 networkFee = 1 gwei;
         vm.fee(networkFee);
         string memory name = "CheScoppiatiTournament";
@@ -85,7 +86,7 @@ contract FantaCryptoTest is Test {
         assertTrue(frozenToken.valueStart > 1800 * 10**18);
         assertTrue(frozenToken.valueEnd == 0);
         assertTrue(frozenToken.timestampStart > block.timestamp - 7 days);
-        vm.rollFork(125787);
+        vm.rollFork(133232); // price BTC: $30,332.0162
         (bitcoinPrice,) = fantaCrypto.readDataFeed(btcPair);
         console2.log("BTC/USD price: ", bitcoinPrice);
         (ethPrice,) = fantaCrypto.readDataFeed(ethPair);
