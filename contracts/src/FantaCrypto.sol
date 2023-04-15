@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-contract FantaCrypto {
+import "@api3/contracts/v0.8/interfaces/IProxy.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract FantaCrypto is Ownable {
     struct Market {
         uint256 id;
         string name;
@@ -31,6 +34,16 @@ contract FantaCrypto {
     mapping(uint256 => uint256) public marketPools;
 
     uint256 public marketCounter;
+
+    mapping (string => address) public proxies;
+
+    constructor() {
+        marketCounter = 0;
+        proxies["BTC/USD"] = 0xe5Cf15fED24942E656dBF75165aF1851C89F21B5;
+        proxies["ETH/USD"] = 0x26690F9f17FdC26D419371315bc17950a0FC90eD;
+        proxies["MATIC/USD"] = 0x3ACccB328Db79Af1B81a4801DAf9ac8370b9FBF8;
+        proxies["API3/USD"] = 0xf25B7429406B24dA879F0D1a008596b74Fcb9C2F;
+    }
 
     function createMarket(
         string memory _name,
@@ -108,4 +121,29 @@ contract FantaCrypto {
         // get the biggest one
         // pay the winner
     }
+
+    function setProxy(string memory name, address _proxy) public onlyOwner {
+        proxies[name] = _proxy;
+    }
+
+    // function to readDataFeed
+    function readDataFeed(string memory proxyName)
+        external
+        view
+        returns (int224 value, uint256 timestamp)
+    {
+        (value, timestamp) = IProxy(proxies[proxyName]).read();
+        
+        require(
+            value > 0, 
+            "Value not positive"
+        );
+        require(
+            timestamp + 1 days > block.timestamp,
+            "Timestamp older than one day"
+        );
+        
+        return (value, timestamp);
+    }
+    
 }

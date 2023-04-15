@@ -3,3 +3,7 @@
 contracts/.env
 contracts/out
 contracts/cache
+
+
+node_modules
+package-lock.json

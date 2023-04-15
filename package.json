@@ -1,0 +1,23 @@
+{
+  "name": "fantacrypto",
+  "version": "1.0.0",
+  "description": "Project for ETHZurich hackathon",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xCaso/FantaCrypto.git"
+  },
+  "author": "Matteo Midena, Matteo Casonato",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/0xCaso/FantaCrypto/issues"
+  },
+  "homepage": "https://github.com/0xCaso/FantaCrypto#readme",
+  "dependencies": {
+    "@api3/chains": "^2.0.0",
+    "@api3/contracts": "^0.7.1"
+  }
+}
