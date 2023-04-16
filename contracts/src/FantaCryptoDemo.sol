@@ -331,6 +331,37 @@ contract FantaCryptoDemo is Ownable {
         return(playerMarkets[_player]);
     }
 
+    // function get markets accessible by a player
+    function getAccessibleMarkets(address _player)
+        external
+        view
+        returns(uint256[] memory)
+    {
+        // scan all markets
+        uint256[] memory tmp = new uint256[](marketCounter);
+        uint256 counter = 0;
+
+        for(uint i = 0; i < marketCounter; i++) {
+            // if market is not public, then check if player is in the whitelist
+            if(!markets[i].publicMarket) {
+                if(marketPlayerPermissions[i][_player].allowed) {
+                    tmp[counter] = i;
+                    counter++;
+                }
+            } else {
+                tmp[counter] = i;
+                counter++;
+            }
+        }
+
+        uint256[] memory accessibleMarkets = new uint256[](counter);
+        for(uint i = 0; i < counter; i++) {
+            accessibleMarkets[i] = tmp[i];
+        }
+
+        return(accessibleMarkets);
+    }
+
     // get market pool
     function getMarketPool(uint256 _marketId)
         external

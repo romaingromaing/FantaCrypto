@@ -13,14 +13,14 @@ import {
 } from '@chakra-ui/react'
 
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Yup from 'yup'
 
 import { Checkbox, CheckboxGroup } from '@chakra-ui/react'
-import { prepareWriteContract, writeContract } from '@wagmi/core'
+import { usePrepareContractWrite, useContractWrite } from 'wagmi'
 import { polygonZkEvm } from '@wagmi/chains';
-
-
+import fantaCrypto from '../contract/FantaCryptoDemo.json'
+const fantaCryptoAbi = fantaCrypto.abi
 
 const MarketFormSchema = Yup.object().shape({
     market_name: Yup.string()
@@ -31,9 +31,6 @@ const MarketFormSchema = Yup.object().shape({
         .min(1, 'Minimum 1!')
         .required('Required'),
 });
-
-
-
 
 export function MarketForm() {
     
@@ -48,33 +45,40 @@ export function MarketForm() {
     const [playerFee, setPlayerFee] = useState('0')
     const [playerFeeError, setPlayerFeeError] = useState('')
     const [publicMarket, setPublicMarket] = useState(false)
+    const [enabledCreateMarket, setEnabledCreateMarket] = useState(false)
     
-    async function wagmiCall() {
-
-        // commentata perchè va in errore la questione ABI
-
-        // const config = await prepareWriteContract({
-        //     address: '0xecb504d39723b0be0e3a9aa33d646642d1051ee1',
-        //     abi: {},
-        //     functionName: 'createMarket',
-        //     args: [
-        //         marketName,
-        //         tokenAmount,
-        //         roundDeadline,
-        //         marketDeadline,
-        //         playerFee,
-        //         [],
-        //         ['0x5e3F50a4171fa7bfE05D5347CC544833c83b3Ee9'],
-        //         publicMarket
-        //     ],
-        //     chainId: polygonZkEvm.id
-        // })
-        
-        // const data = await writeContract(config)
-
-        return true
-    }
+    const { config } = usePrepareContractWrite({
+        address: `0x${process.env.REACT_APP_CONTRACT_ADDRESS}`,
+        abi: fantaCryptoAbi,
+        functionName: 'createMarket',
+        enabled: enabledCreateMarket,
+        args: [
+            marketName,
+            tokenAmount,
+            roundDeadline,
+            marketDeadline,
+            +playerFee,
+            [],
+            !publicMarket 
+                ?
+            [
+                '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+                '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+                '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+                '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+            ] 
+                :
+            []
+        ],
+    })
     
+    const { write } = useContractWrite(config)
+
+    useEffect(() => {
+        if (marketName != "" && tokenAmount != "" && roundDeadline != "" && marketDeadline != "" && playerFee != "") {
+            setEnabledCreateMarket(true)
+        }
+    }, [marketName, tokenAmount, roundDeadline, marketDeadline, playerFee])
 
     return (
         <Formik
@@ -82,15 +86,9 @@ export function MarketForm() {
                 market_name: ''
             }}
             // validationSchema={MarketFormSchema}  // this works but I didn't set the error messages :)
-            onSubmit={(values, actions) => {
-                wagmiCall()
-                .then(() => {
-                    console.log('success')
-                })
-                .catch((err) => {
-                    console.log(err)
-                })
-            }}
+            onSubmit={
+                () => write?.()
+            }
         >
             {(props) => (
                 <Form className='forms'>

@@ -19,6 +19,9 @@ import { readContract, prepareWriteContract, writeContract } from '@wagmi/core'
 import { polygonZkEvm } from '@wagmi/chains';
 import { useAccount } from 'wagmi';
 
+import fantaCrypto from '../contract/FantaCryptoDemo.json'
+const fantaCryptoAbi = fantaCrypto.abi
+
 const MarketFormSchema = Yup.object().shape({
     market_name: Yup.string()
         .min(2, 'Too Short!')
@@ -43,25 +46,23 @@ export function SubmissionForm() {
 
     const [positionCounter, setPositionCounter] = useState(0)
 
-    const { address } = useAccount()
+    const { address: userAddress } = useAccount()
 
-    function readAvailableMarkets() {
+    function readAvailableMarkets(): string[] {
+        // do it after 1 second
+        const data = readContract({
+            address: `0x${process.env.REACT_APP_CONTRACT_ADDRESS}`,
+            abi: fantaCryptoAbi,
+            functionName: 'getAccessibleMarkets',
+            // chainId: polygonZkEvm.id,
+            args: [userAddress]
+        })
 
-        // commentata perchè va in errore la questione ABI
+        data.then(() => {
+            console.log(data);
+            return ["Che_Scoppiati", "Casa di Pillon", "Merda"]
+        })
 
-        // const data = readContract({
-        //     address: '0xecb504d39723b0be0e3a9aa33d646642d1051ee1',
-        //     abi: wagmigotchiABI,
-        //     functionName: 'getPlayerMarkets',
-        //     chainId: polygonZkEvm.id,
-        //     args: [address]
-        // })
-
-        // data.then(() => {
-        //     return ["Che_Scoppiati", "Casa di Pillon"]
-        // })
-        
-        console.log(address)
         return ["Che_Scoppiati", "Casa di Pillon"]
     }
 
