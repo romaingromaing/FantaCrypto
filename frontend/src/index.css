@@ -1,3 +1,8 @@
+html {
+  background-color: #1c1c1c;
+  color: white
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -19,10 +24,28 @@ header.navbar {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  padding: 0 1em;
+  padding: 1em 1em;
   color: white;
 }
 
 header.navbar h1 {
   color: white;
+}
+
+div.mainBox {
+  margin: 3em auto;
+  background-color: #282c34;
+  border-radius: 16px;
+}
+
+div.tabs {
+  padding: 2em 0.4em;
+}
+
+.forms {
+  width: 50%;
+}
+
+.form-control {
+  margin-top: 1em;
 }

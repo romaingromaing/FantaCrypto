@@ -42,17 +42,17 @@ function App() {
     <ChakraProvider>
       <WagmiConfig client={wagmiClient}>
         <RainbowKitProvider chains={chains}>
-          <div>
+          <html>
             <header className='navbar'>
               <div>
                 <Heading as='h1'>FantaCrypto</Heading>
               </div>
               <Profile />
             </header>
-            <Container maxW='xl'>
+            <Container maxW='container.xl' className='mainBox'>
               <MainTabs />
             </Container>
-          </div>
+          </html>
         </RainbowKitProvider>
       </WagmiConfig>
     </ChakraProvider>

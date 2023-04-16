@@ -1,17 +1,18 @@
 import { Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
 
+import { MarketForm } from './MarketForm'
 
 export function MainTabs() {
 
     return (
-        <Tabs isFitted variant='enclosed'>
-            <TabList mb='1em'>
-                <Tab>One</Tab>
-                <Tab>Two</Tab>
+        <Tabs variant='soft-rounded' colorScheme='blue' className='tabs'>
+            <TabList>
+                <Tab color='white'>Create a Market</Tab>
+                <Tab color='white'>Put your submission</Tab>
             </TabList>
             <TabPanels>
                 <TabPanel>
-                    <p>one!</p>
+                    <MarketForm />
                 </TabPanel>
                 <TabPanel>
                     <p>two!</p>
