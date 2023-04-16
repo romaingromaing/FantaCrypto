@@ -96,7 +96,8 @@ contract FantaCrypto is Ownable {
         uint256 _marketDeadline,
         uint256 _playerFee,
         string[] memory _blacklistedTokens,
-        address[] memory _whitelistedPlayers
+        address[] memory _whitelistedPlayers,
+        bool _publicMarket                          // I think this is correct
     ) external returns (uint256) {
         marketCounter++;
         // empty mapping of blacklisted tokens
@@ -117,7 +118,7 @@ contract FantaCrypto is Ownable {
             _marketDeadline,
             _playerFee,
             _whitelistedPlayers.length == 0,
-            true
+            _publicMarket                               // and here the same
         );
         // get the price feed for all the tokens and save them in the frozenTokens, but not if they are blacklisted
         for (uint256 i = 0; i < oracleProxyNames.length; i++) {
