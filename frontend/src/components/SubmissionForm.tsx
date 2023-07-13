@@ -17,7 +17,7 @@ import * as Yup from 'yup'
 
 import { readContract, prepareWriteContract, writeContract } from '@wagmi/core'
 import { polygonZkEvm } from '@wagmi/chains';
-import { useAccount } from 'wagmi';
+import { useAccount, useContractRead } from 'wagmi';
 
 import fantaCrypto from '../contract/FantaCryptoDemo.json'
 const fantaCryptoAbi = fantaCrypto.abi
@@ -48,20 +48,33 @@ export function SubmissionForm() {
 
     const { address: userAddress } = useAccount()
 
+    const { data, isError, isLoading, error } = useContractRead({
+        address: `0x${process.env.REACT_APP_CONTRACT_ADDRESS}`,
+        abi: fantaCryptoAbi,
+        functionName: 'getMarket',
+        args: [2]
+    })
+
+    console.log(data)
+    console.log(error)
+
     function readAvailableMarkets(): string[] {
         // do it after 1 second
-        const data = readContract({
-            address: `0x${process.env.REACT_APP_CONTRACT_ADDRESS}`,
-            abi: fantaCryptoAbi,
-            functionName: 'getAccessibleMarkets',
-            // chainId: polygonZkEvm.id,
-            args: [userAddress]
-        })
+        // const data = readContract({
+        //     address: `0x${process.env.REACT_APP_CONTRACT_ADDRESS}`,
+        //     abi: fantaCryptoAbi,
+        //     functionName: 'getMarket',
+        //     // chainId: polygonZkEvm.id,
+        //     args: [2]
+        // })
 
-        data.then(() => {
-            console.log(data);
-            return ["Che_Scoppiati", "Casa di Pillon", "Merda"]
-        })
+        // data.then(() => {
+        //     console.log(data);
+        //     return ["Che_Scoppiati", "Casa di Pillon", "Merda"]
+        // })
+        
+
+        
 
         return ["Che_Scoppiati", "Casa di Pillon"]
     }
